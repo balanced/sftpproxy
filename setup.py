@@ -21,7 +21,8 @@ setup(
     author='victorlin',
     author_email='victorlin@balancedpayments.com',
     install_requires=[
-
+        'paramiko >=1.14,<2.0',
+        'pycrypto >=2.6.1,<3.0',
     ],
     extras_require=dict(
         tests=tests_require,
