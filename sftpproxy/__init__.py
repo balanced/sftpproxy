@@ -34,6 +34,24 @@ class ServerInterface(paramiko.ServerInterface):
         self.password = None
         self.key = None
 
+    def get_allowed_auths(self, username):
+        auths = []
+        auths.append('password')
+        auths.append('publickey')
+        return ','.join(auths)
+
+    def check_auth_none(self, username):
+        # XXX:
+        return paramiko.AUTH_SUCCESSFUL
+
+    def check_auth_publickey(self, username, key):
+        # XXX:
+        return paramiko.AUTH_SUCCESSFUL
+
+    def check_auth_password(self, username, password):
+        # XXX:
+        return paramiko.AUTH_SUCCESSFUL
+
     # TODO:
 
 
@@ -48,7 +66,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
     join_timeout = 10
 
     Interface = SFTPServerInterface
-    
+
     Server = ServerInterface
 
     def __init__(
@@ -97,7 +115,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
                     if not transport.is_active():
                         ex = transport.get_exception() or 'Negotiation failed.'
                         logger.warning(
-                            '%r, disconnecting - %s',
+                            '%s, disconnecting - %s',
                             self.client_address_str,
                             ex,
                         )
@@ -109,7 +127,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
                     time.time() - start > self.negotiation_timeout
                 ):
                     logger.warning(
-                        '%r, disconnecting - Negotiation timedout.',
+                        '%s, disconnecting - Negotiation timedout.',
                         self.client_address_str,
                     )
                     return
@@ -118,8 +136,8 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
             channel = transport.accept(self.auth_timeout)
             if channel is None:
                 logger.warning(
-                    '%r, disconnecting - auth failed, channel is None.',
-                    self.client_address,
+                    '%s, disconnecting - auth failed, channel is None.',
+                    self.client_address_str,
                 )
                 return
 
@@ -128,7 +146,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
                 transport.join(timeout=self.join_timeout)
         finally:
             logger.info(
-                '%r, cleaning up connection - Bye.',
+                '%s, cleaning up connection - Bye.',
                 self.client_address_str,
             )
             transport.close()
@@ -160,6 +178,8 @@ class ThreadingServer(SocketServer.ThreadingMixIn, Server):
 
 if __name__ == '__main__':
     # XXX
+    import sys
     logging.basicConfig(level=logging.INFO)
-    server = Server(('localhost', 9999), None)
+    host_key = paramiko.RSAKey.from_private_key_file(sys.argv[1])
+    server = Server(('localhost', 9999), host_key)
     server.serve_forever()
