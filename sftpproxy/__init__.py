@@ -17,9 +17,6 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
 
     def __init__(self, server, *args, **kwargs):
         self.client_address = server.client_address
-        self.proxy = server.proxy
-        self.username = self.proxy.config.username or server.username
-        self.password = self.proxy.config.password or server.password
         super(SFTPServerInterface, self).__init__(server, *args, **kwargs)
 
     # TODO:
@@ -52,6 +49,9 @@ class ServerInterface(paramiko.ServerInterface):
         # XXX:
         return paramiko.AUTH_SUCCESSFUL
 
+    def check_channel_request(self, kind, chanid):
+        # XXX:
+        return paramiko.OPEN_SUCCEEDED
     # TODO:
 
 
