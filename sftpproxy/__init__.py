@@ -95,9 +95,9 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
         if self.host_key is not None:
             transport.add_server_key(self.host_key)
         transport.set_subsystem_handler(
-            'sftp',
-            paramiko.SFTPServer,
-            self.SFTPServer,
+            name='sftp',
+            handler=paramiko.SFTPServer,
+            sftp_si=self.SFTPServer,
         )
 
         try:
@@ -165,14 +165,14 @@ class TCPServer(SocketServer.TCPServer):
     allow_reuse_address = True
 
 
-class ForkingServer(SocketServer.ForkingMixIn, TCPServer):
+class ForkingTCPServer(SocketServer.ForkingMixIn, TCPServer):
 
     def finish_request(self, request, client_address):
         Crypto.Random.atfork()
         return TCPServer.finish_request(self, request, client_address)
 
 
-class ThreadingServer(SocketServer.ThreadingMixIn, TCPServer):
+class ThreadingTCPServer(SocketServer.ThreadingMixIn, TCPServer):
     pass
 
 
