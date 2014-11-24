@@ -1,5 +1,4 @@
 from __future__ import unicode_literals
-import os
 import time
 import logging
 import functools
@@ -9,77 +8,13 @@ import SocketServer
 import paramiko
 import Crypto.Random
 
+from .utils import as_sftp_error
+from .file_handles import SFTPHandle
+from .file_handles import SFTPWriteHandle
+
 logger = logging.getLogger(__name__)
 
 __version__ = '0.0.0'
-
-
-def as_sftp_error(func):
-    """Decorate a function for outgoing SFTP operations, try to catch its
-    exceptions and convert them into error number and return
-
-    """
-
-    name = getattr(func, 'func_name', '<unknown>')
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        logger.debug(
-            '%s - enter on (%r,%r) from %s',
-            name, args[1:], kwargs, args[0].client_address,
-        )
-        try:
-            rc = func(*args, **kwargs)
-        except (SystemExit, KeyboardInterrupt):
-            raise
-        except Exception as ex:
-            if hasattr(ex, 'errno'):
-                error = ex.errno
-            else:
-                error = None
-            rc = paramiko.SFTPServer.convert_errno(error)
-            logger.exception(
-                '%s - error %s on (%r%r) from %s\n',
-                name, rc, args[1:], kwargs, args[0].client_address,
-            )
-        logger.debug(
-            '%s - exit %s',
-            name, '<data>' if isinstance(rc, basestring) else rc
-        )
-        return rc
-
-    return wrapper
-
-
-class SFTPHandle(paramiko.SFTPHandle):
-
-    @classmethod
-    def as_mode(cls, flags):
-        open_flag = flags & (os.O_RDONLY | os.O_WRONLY | os.O_RDWR)
-        if open_flag == os.O_RDONLY:
-            mode = 'r'
-        elif open_flag == os.O_WRONLY:
-            mode = 'w'
-        elif open_flag == os.O_RDWR:
-            mode = 'rw'
-        if flags & os.O_APPEND:
-            mode += '+'
-        return mode
-
-    def __init__(self, owner, path, flags, attr):
-        super(SFTPHandle, self).__init__(flags)
-        self.owner = owner
-        self.path = path
-
-    @property
-    def client_address(self):
-        return self.owner.client_address
-
-    def normalize(self, path):
-        path = self.owner.upstream.normalize(path)
-        if path.startswith('//'):
-            path = path[1:]
-        return path
 
 
 class SFTPServerInterface(paramiko.SFTPServerInterface):
@@ -114,15 +49,15 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
     def open(self, path, flags, attr):
         mode = SFTPHandle.as_mode(flags)
         if mode in ('r',):
-            print '#'*10, 'read file'
             # TODO:
             pass
-            # return SFTPSanitizingHandle(self, path, flags, attr)
         elif mode in ('w', 'w+'):
-            print '#'*10, 'write file'
-            # TODO:
-            pass
-            # return SFTPDetokenizingHandle(self, path, flags, attr)
+            return SFTPWriteHandle(
+                owner=self,
+                path=path,
+                flags=flags,
+                attr=attr,
+            )
         return paramiko.sftp.SFTP_OP_UNSUPPORTED
 
 
@@ -278,12 +213,3 @@ class ForkingTCPServer(SocketServer.ForkingMixIn, TCPServer):
 
 class ThreadingTCPServer(SocketServer.ThreadingMixIn, TCPServer):
     pass
-
-
-if __name__ == '__main__':
-    # XXX
-    import sys
-    logging.basicConfig(level=logging.INFO)
-    host_key = paramiko.RSAKey.from_private_key_file(sys.argv[1])
-    server = TCPServer(('localhost', 9999), host_key)
-    server.serve_forever()
