@@ -20,27 +20,29 @@ __version__ = '0.0.0'
 class SFTPServerInterface(paramiko.SFTPServerInterface):
 
     def __init__(self, server, *args, **kwargs):
+        # the server is SSHServerInterface here
         self.client_address = server.client_address
+        self.ssh_server = server
+        self.proxy = server.proxy
+        self.username = self.proxy.config.get('username') or server.username
+        self.password = self.proxy.config.get('password') or server.password
+        self.upstream = None
         super(SFTPServerInterface, self).__init__(server, *args, **kwargs)
 
     # paramiko.SFTPServerInterface
 
     def session_started(self):
-        # XXX
-        return
-        t = paramiko.Transport(self.proxy.config.address)
+        t = paramiko.Transport(self.proxy.address)
         t.connect(
-            hostkey=self.proxy.config.host_identity,
+            hostkey=self.proxy.config.get('host_identity'),
             username=self.username,
             password=self.password,
-            pkey=self.proxy.config.identity,
+            pkey=self.proxy.config.get('identity'),
         )
         self.upstream = paramiko.SFTPClient.from_transport(t)
 
     def session_ended(self):
-        # XXX
-        return
-        # NOTE: self.upstream.close() doesn't send disconnect msg
+        # Notice: self.upstream.close() doesn't send disconnect msg
         if self.upstream is not None:
             self.upstream.sock.transport.close()
             self.upstream = None
@@ -100,11 +102,15 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
 class SSHServerInterface(paramiko.ServerInterface):
 
     def __init__(self, server, client_address):
+        # the server is TCPServer here
         self.client_address = client_address
         self.proxy = None
         self.username = None
         self.password = None
         self.key = None
+        self.tcp_server = server
+        # the sftp proxy factory
+        self._proxy_factory = self.tcp_server.config['SFTP_PROXY_FACTORY']
 
     def get_allowed_auths(self, username):
         auths = []
@@ -113,19 +119,27 @@ class SSHServerInterface(paramiko.ServerInterface):
         return ','.join(auths)
 
     def check_auth_none(self, username):
+        self.proxy = self._proxy_factory(username)
         # XXX:
         return paramiko.AUTH_SUCCESSFUL
 
     def check_auth_publickey(self, username, key):
+        self.proxy = self._proxy_factory(username)
         # XXX:
         return paramiko.AUTH_SUCCESSFUL
 
     def check_auth_password(self, username, password):
+        self.proxy = self._proxy_factory(username)
         # XXX:
         return paramiko.AUTH_SUCCESSFUL
 
     def check_channel_request(self, kind, chanid):
-        # XXX:
+        if kind == 'session' and self.proxy is not None:
+            return paramiko.OPEN_SUCCEEDED
+        logger.info(
+            'channel request denied from %s, kind=%s',
+            self.client_address, kind
+        )
         return paramiko.OPEN_SUCCEEDED
     # TODO:
 
@@ -230,12 +244,13 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
 
 class TCPServer(SocketServer.TCPServer):
 
-    def __init__(self, address, host_key):
+    def __init__(self, address, host_key, config=None):
         SocketServer.TCPServer.__init__(
             self,
             address,
             functools.partial(SFTPRequestHandler, host_key=host_key)
         )
+        self.config = config or {}
 
     allow_reuse_address = True
 

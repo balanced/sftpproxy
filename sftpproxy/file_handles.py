@@ -72,13 +72,13 @@ class SFTPWriteHandle(SFTPHandle):
                 path=self.path,
                 fileobj=self.temp_file,
             )
+            # XXX: WTF?
+            # db.Session.rollback()  # NOTE: release transaction resources
+            modified_file.seek(0)
+            # flush the modified file to upstream
+            self.owner.upstream.putfo(modified_file, self.path)
         finally:
             self.temp_file.seek(offset)
-        # XXX: WTF?
-        # db.Session.rollback()  # NOTE: release transaction resources
-        modified_file.seek(0)
-        # flush the modified file to upstream
-        self.owner.upstream.putfo(modified_file, self.path)
 
     # paramiko.SFTPHandle
 
