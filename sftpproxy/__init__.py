@@ -10,7 +10,8 @@ import Crypto.Random
 
 from .utils import as_sftp_error
 from .file_handles import SFTPHandle
-from .file_handles import SFTPWriteHandle
+from .file_handles import SFTPReadingHandle
+from .file_handles import SFTPWritingHandle
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
             hostkey=self.proxy.config.get('host_identity'),
             username=self.username,
             password=self.password,
-            pkey=self.proxy.config.get('identity'),
+            pkey=self.proxy.config.get('private_key'),
         )
         self.upstream = paramiko.SFTPClient.from_transport(t)
 
@@ -51,10 +52,14 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
     def open(self, path, flags, attr):
         mode = SFTPHandle.as_mode(flags)
         if mode in ('r',):
-            # TODO:
-            pass
+            return SFTPReadingHandle(
+                owner=self,
+                path=path,
+                flags=flags,
+                attr=attr,
+            )
         elif mode in ('w', 'w+'):
-            return SFTPWriteHandle(
+            return SFTPWritingHandle(
                 owner=self,
                 path=path,
                 flags=flags,

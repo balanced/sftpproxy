@@ -19,18 +19,20 @@ class SFTPProxyInterface(object):
 
     """
 
-    def ingress_handler(self, path, fileobj):
+    def ingress_handler(self, path, input_file, output_file):
         """Called to handle ingress file (written file), and return the
-        modified file object. Path is the file path of written file, fileobj
-        is the written file.
+        modified file object. Path is the file path of written file, input_file
+        is the written file. output_file is the file for outputting modified
+        content
 
         """
-        return fileobj
+        output_file.write(input_file.read())
 
-    def egress_handler(self, path, fileobj):
+    def egress_handler(self, path, input_file, output_file):
         """Called to handle egress file (read file), and return the
-        modified file object. Path is the file path of read file, fileobj
-        is the read file.
-
+        modified file object. Path is the file path of read file, input_file
+        is the read file. output_file is the file for outputting modified
+        content
+        
         """
-        return fileobj
+        output_file.write(input_file.read())
