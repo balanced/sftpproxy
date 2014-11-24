@@ -22,7 +22,7 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
     # TODO:
 
 
-class ServerInterface(paramiko.ServerInterface):
+class SSHServerInterface(paramiko.ServerInterface):
 
     def __init__(self, server, client_address):
         self.client_address = client_address
@@ -65,9 +65,9 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
 
     join_timeout = 10
 
-    Interface = SFTPServerInterface
+    SFTPServer = SFTPServerInterface
 
-    Server = ServerInterface
+    SSHServer = SSHServerInterface
 
     def __init__(
         self,
@@ -97,7 +97,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
         transport.set_subsystem_handler(
             'sftp',
             paramiko.SFTPServer,
-            self.Interface,
+            self.SFTPServer,
         )
 
         try:
@@ -105,7 +105,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
             event = threading.Event()
             transport.start_server(
                 event=event,
-                server=self.Server(self.server, client_address),
+                server=self.SSHServer(self.server, client_address),
             )
 
             # negotiate
@@ -153,7 +153,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
         # TODO:
 
 
-class Server(SocketServer.TCPServer):
+class TCPServer(SocketServer.TCPServer):
 
     def __init__(self, address, host_key):
         SocketServer.TCPServer.__init__(
@@ -165,14 +165,14 @@ class Server(SocketServer.TCPServer):
     allow_reuse_address = True
 
 
-class ForkingServer(SocketServer.ForkingMixIn, Server):
+class ForkingServer(SocketServer.ForkingMixIn, TCPServer):
 
     def finish_request(self, request, client_address):
         Crypto.Random.atfork()
-        return Server.finish_request(self, request, client_address)
+        return TCPServer.finish_request(self, request, client_address)
 
 
-class ThreadingServer(SocketServer.ThreadingMixIn, Server):
+class ThreadingServer(SocketServer.ThreadingMixIn, TCPServer):
     pass
 
 
@@ -181,5 +181,5 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(level=logging.INFO)
     host_key = paramiko.RSAKey.from_private_key_file(sys.argv[1])
-    server = Server(('localhost', 9999), host_key)
+    server = TCPServer(('localhost', 9999), host_key)
     server.serve_forever()
