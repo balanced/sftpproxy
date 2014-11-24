@@ -151,6 +151,7 @@ class SSHServerInterface(paramiko.ServerInterface):
 
 class SFTPRequestHandler(SocketServer.StreamRequestHandler):
 
+    # TODO: this should be all from tcp server's config dict
     negotiation_poll = 0.1
 
     negotiation_timeout = 60
