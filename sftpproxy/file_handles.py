@@ -57,7 +57,7 @@ class SFTPWriteHandle(SFTPHandle):
 
         """
         fd, tmp_path = tempfile.mkstemp()
-        fo = os.fdopen(fd, 'r+')
+        fo = os.fdopen(fd, 'w+')
         return fo
 
     def _modify_pass_through(self):
@@ -68,24 +68,17 @@ class SFTPWriteHandle(SFTPHandle):
         offset = self.temp_file.tell()
         try:
             self.temp_file.seek(0)
-            # modified_file = self.owner.proxy.ingress_handler(
-            #     path=self.path,
-            #     fileobj=self.temp_file,
-            # )
-            # XXX: a hodor proxy
-            import re
-            word_pattern = re.compile(r'(\w+)')
-            data = word_pattern.sub('hodor', self.temp_file.read())
-            import StringIO
-            modified_file = StringIO.StringIO(data)
-            print data
+            modified_file = self.owner.proxy.ingress_handler(
+                path=self.path,
+                fileobj=self.temp_file,
+            )
         finally:
             self.temp_file.seek(offset)
         # XXX: WTF?
         # db.Session.rollback()  # NOTE: release transaction resources
         modified_file.seek(0)
         # flush the modified file to upstream
-        # self.owner.upstream.putfo(modified_file, self.path)
+        self.owner.upstream.putfo(modified_file, self.path)
 
     # paramiko.SFTPHandle
 

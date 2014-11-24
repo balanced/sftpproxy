@@ -60,6 +60,42 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
             )
         return paramiko.sftp.SFTP_OP_UNSUPPORTED
 
+    @as_sftp_error
+    def list_folder(self, path):
+        return self.upstream.listdir_attr(path)
+
+    @as_sftp_error
+    def stat(self, path):
+        return self.upstream.stat(path)
+
+    @as_sftp_error
+    def lstat(self, path):
+        return self.stat(path)
+
+    @as_sftp_error
+    def remove(self, path):
+        self.upstream.remove(path)
+        return paramiko.SFTP_OK
+
+    @as_sftp_error
+    def rename(self, oldpath, newpath):
+        self.upstream.rename(oldpath, newpath)
+        return paramiko.SFTP_OK
+
+    @as_sftp_error
+    def mkdir(self, path, attr):
+        self.upstream.mkdir(path)
+        return paramiko.SFTP_OK
+
+    @as_sftp_error
+    def rmdir(self, path):
+        self.upstream.rmdir(path)
+        return paramiko.SFTP_OK
+
+    @as_sftp_error
+    def canonicalize(self, path):
+        return self.upstream.normalize(path)
+
 
 class SSHServerInterface(paramiko.ServerInterface):
 
