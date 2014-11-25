@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 __version__ = '0.0.0'
 
 
-class SFTPServerInterface(paramiko.SFTPServerInterface):
+class SFTPServerHandler(paramiko.SFTPServerInterface):
 
     def __init__(self, server, *args, **kwargs):
         # the server is SSHServerInterface here
@@ -28,7 +28,7 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
         self.username = self.proxy.config.get('username') or server.username
         self.password = self.proxy.config.get('password') or server.password
         self.upstream = None
-        super(SFTPServerInterface, self).__init__(server, *args, **kwargs)
+        super(SFTPServerHandler, self).__init__(server, *args, **kwargs)
 
     # paramiko.SFTPServerInterface
 
@@ -104,7 +104,7 @@ class SFTPServerInterface(paramiko.SFTPServerInterface):
         return self.upstream.normalize(path)
 
 
-class SSHServerInterface(paramiko.ServerInterface):
+class SSHServerHandler(paramiko.ServerInterface):
 
     def __init__(self, server, client_address):
         # the server is TCPServer here
@@ -149,7 +149,7 @@ class SSHServerInterface(paramiko.ServerInterface):
     # TODO:
 
 
-class SFTPRequestHandler(SocketServer.StreamRequestHandler):
+class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
 
     # TODO: this should be all from tcp server's config dict
     negotiation_poll = 0.1
@@ -160,18 +160,18 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
 
     join_timeout = 10
 
-    SFTPServer = SFTPServerInterface
-
-    SSHServer = SSHServerInterface
-
     def __init__(
         self,
         request,
         client_address,
         server,
         host_key,
+        ssh_handler_factory=SSHServerHandler,
+        sftp_handler_factory=SFTPServerHandler,
     ):
         self.host_key = host_key
+        self.ssh_handler_factory = ssh_handler_factory
+        self.sftp_handler_factory = sftp_handler_factory
         SocketServer.StreamRequestHandler.__init__(
             self, request, client_address, server,
         )
@@ -192,7 +192,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
         transport.set_subsystem_handler(
             name='sftp',
             handler=paramiko.SFTPServer,
-            sftp_si=self.SFTPServer,
+            sftp_si=self.sftp_handler_factory,
         )
 
         try:
@@ -200,7 +200,7 @@ class SFTPRequestHandler(SocketServer.StreamRequestHandler):
             event = threading.Event()
             transport.start_server(
                 event=event,
-                server=self.SSHServer(self.server, client_address),
+                server=self.ssh_handler_factory(self.server, client_address),
             )
 
             # negotiate
@@ -254,7 +254,7 @@ class TCPServer(SocketServer.TCPServer):
         SocketServer.TCPServer.__init__(
             self,
             address,
-            functools.partial(SFTPRequestHandler, host_key=host_key)
+            functools.partial(SFTPStreamRequestHandler, host_key=host_key)
         )
         self.config = config or {}
 
