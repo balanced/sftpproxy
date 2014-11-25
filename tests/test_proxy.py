@@ -40,6 +40,7 @@ class TestSFTPProxy(TestSFTPProxyBase):
             set(cli.listdir('yo')),
             set(['yo/whats']),
         )
+        # TODO: add reading test
 
     def test_origin_basic_operations(self):
         password = 'foobar'
