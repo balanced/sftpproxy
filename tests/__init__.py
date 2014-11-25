@@ -116,7 +116,7 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
 
     @as_sftp_error
     def canonicalize(self, path):
-        return os.path.realpath(os.path.normpath('/' + path))
+        return os.path.realpath(os.path.normpath(b'/' + path))
 
 
 class SSHServerHandler(paramiko.ServerInterface):
@@ -204,9 +204,6 @@ class TestSFTPProxyBase(unittest.TestCase):
         origin_thread.daemon = True
         origin_thread.start()
 
-        # XXX:
-        return
-
         # proxy server
         cls.proxy_server = TCPServer(
             address=('localhost', 0),
@@ -247,9 +244,6 @@ class TestSFTPProxyBase(unittest.TestCase):
         user = self.origin_server.users[username]
         del self.origin_server.users[username]
         shutil.rmtree(user.root)
-
-    def _uploads(self):
-        raise NotImplementedError
 
     @classmethod
     def fixture_path(cls, *parts):

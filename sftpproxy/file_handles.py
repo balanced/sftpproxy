@@ -119,12 +119,12 @@ class SFTPReadingHandle(SFTPHandle):
         fo.seek(0)
         return fo
 
-    def _modify_pass_through(self, input_file):
+    def _modify_read_file(self, input_file):
         fd, tmp_path = tempfile.mkstemp()
         output_file = os.fdopen(fd, 'r+')
         self.owner.proxy.egress_handler(
             path=self.normalized_path,
-            input_fin=input_file,
+            input_file=input_file,
             output_file=output_file,
         )
         # XXX: WTF?
