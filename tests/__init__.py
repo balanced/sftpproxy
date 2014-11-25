@@ -75,7 +75,7 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
 
     @as_sftp_error
     def open(self, path, flags, attr):
-        return SFTPOrigin.Handle(self, path, flags, attr)
+        return Handle(self, path, flags, attr)
 
     @as_sftp_error
     def list_folder(self, path):
@@ -106,7 +106,7 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
 
     @as_sftp_error
     def mkdir(self, path, attr):
-        os.mkdir(self.normalize(path), attr)
+        os.mkdir(self.normalize(path), attr.st_mode)
         return paramiko.SFTP_OK
 
     @as_sftp_error
