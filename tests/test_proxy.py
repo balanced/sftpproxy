@@ -67,8 +67,12 @@ class TestSFTPProxy(TestSFTPProxyBase):
 
     def test_basic_operations(self):
 
+        class AuthFreeProxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                return True
+
         def make_proxy(username):
-            proxy = SFTPProxyInterface()
+            proxy = AuthFreeProxy()
             proxy.address = ':'.join(map(str, self.origin_server.server_address))
             proxy.config = dict(
                 username=user.name,
