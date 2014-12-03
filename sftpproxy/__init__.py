@@ -189,14 +189,13 @@ class SSHServerHandler(paramiko.ServerInterface):
 
 class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
 
-    # TODO: this should be all from tcp server's config dict
-    negotiation_poll = 0.1
+    default_negotiation_poll = 0.1
 
-    negotiation_timeout = 60
+    default_negotiation_timeout = 60
 
-    auth_timeout = 60
+    default_auth_timeout = 60
 
-    join_timeout = 10
+    default_join_timeout = 10
 
     def __init__(
         self,
@@ -223,6 +222,23 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
         # proxy protocol
         client_address = self.client_address
 
+        negotiation_poll = self.server.config.get(
+            'SFTP_PROXY_NEGOTIATION_POLL',
+            self.default_negotiation_poll,
+        )
+        negotiation_timeout = self.server.config.get(
+            'SFTP_PROXY_NEGOTIATION_TIMEOUT',
+            self.default_negotiation_timeout,
+        )
+        auth_timeout = self.server.config.get(
+            'SFTP_PROXY_AUTH_TIMEOUT',
+            self.default_auth_timeout,
+        )
+        join_timeout = self.server.config.get(
+            'SFTP_PROXY_JOIN_TIMEOUT',
+            self.default_join_timeout,
+        )
+
         # transport
         transport = paramiko.Transport(self.request)
         if self.host_key is not None:
@@ -244,7 +260,7 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
             # negotiate
             start = time.time()
             while True:
-                if event.wait(self.negotiation_poll):
+                if event.wait(negotiation_poll):
                     if not transport.is_active():
                         ex = transport.get_exception() or 'Negotiation failed.'
                         logger.warning(
@@ -256,8 +272,8 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
                     logger.debug('negotiation was OK')
                     break
                 if (
-                    self.negotiation_timeout is not None and
-                    time.time() - start > self.negotiation_timeout
+                    negotiation_timeout is not None and
+                    time.time() - start > negotiation_timeout
                 ):
                     logger.warning(
                         '%s, disconnecting - Negotiation timedout.',
@@ -266,7 +282,7 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
                     return
 
             # accepted
-            channel = transport.accept(self.auth_timeout)
+            channel = transport.accept(auth_timeout)
             if channel is None:
                 logger.warning(
                     '%s, disconnecting - auth failed, channel is None.',
@@ -276,14 +292,13 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
 
             # command(s)
             while transport.isAlive():
-                transport.join(timeout=self.join_timeout)
+                transport.join(timeout=join_timeout)
         finally:
             logger.info(
                 '%s, cleaning up connection - Bye.',
                 self.client_address_str,
             )
             transport.close()
-        # TODO:
 
 
 class TCPServer(SocketServer.TCPServer):

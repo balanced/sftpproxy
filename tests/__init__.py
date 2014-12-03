@@ -183,6 +183,7 @@ class SFTPOrigin(
                 sftp_handler_factory=SFTPServerHandler,
             ),
         )
+        self.config = {}
 
 
 class TestSFTPProxyBase(unittest.TestCase):
