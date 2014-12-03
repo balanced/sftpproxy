@@ -124,19 +124,54 @@ class SSHServerHandler(paramiko.ServerInterface):
         return ','.join(auths)
 
     def check_auth_none(self, username):
-        self.proxy = self._proxy_factory(username)
-        # XXX:
-        return paramiko.AUTH_SUCCESSFUL
+        proxy = self._proxy_factory(username)
+        if proxy is not None and proxy.authenticate():
+            self.proxy = proxy
+            self.username = username
+            logger.info(
+                'auth none from %s succeeded, username=%s ',
+                self.client_address, username,
+            )
+            return paramiko.AUTH_SUCCESSFUL
+        logger.info(
+            'auth none from %s failed, username=%s ',
+            self.client_address, username,
+        )
+        return paramiko.AUTH_FAILED
 
     def check_auth_publickey(self, username, key):
-        self.proxy = self._proxy_factory(username)
-        # XXX:
-        return paramiko.AUTH_SUCCESSFUL
+        proxy = self._proxy_factory(username)
+        if proxy is not None and proxy.authenticate(key=key):
+            self.proxy = proxy
+            self.username = username
+            self.key = key
+            logger.info(
+                'auth publickey from %s succeeded, username=%s ',
+                self.client_address, username,
+            )
+            return paramiko.AUTH_SUCCESSFUL
+        logger.info(
+            'auth publickey from %s failed, username=%s ',
+            self.client_address, username,
+        )
+        return paramiko.AUTH_FAILED
 
     def check_auth_password(self, username, password):
-        self.proxy = self._proxy_factory(username)
-        # XXX:
-        return paramiko.AUTH_SUCCESSFUL
+        proxy = self._proxy_factory(username)
+        if proxy is not None and proxy.authenticate(password=password):
+            self.proxy = proxy
+            self.username = username
+            self.password = password
+            logger.info(
+                'auth password from %s succeeded, username=%s ',
+                self.client_address, username,
+            )
+            return paramiko.AUTH_SUCCESSFUL
+        logger.info(
+            'auth password from %s failed, username=%s ',
+            self.client_address, username,
+        )
+        return paramiko.AUTH_FAILED
 
     def check_channel_request(self, kind, chanid):
         if kind == 'session' and self.proxy is not None:
