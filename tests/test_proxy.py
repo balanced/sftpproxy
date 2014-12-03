@@ -47,7 +47,7 @@ class TestSFTPProxy(TestSFTPProxyBase):
         otherwise the connection will be blocked
 
         """
-        transport = paramiko.Transport(self.origin_server.server_address)
+        transport = paramiko.Transport(*args, **kwargs)
         self.addCleanup(transport.close)
         return transport
 
