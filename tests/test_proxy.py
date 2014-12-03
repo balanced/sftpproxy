@@ -42,13 +42,22 @@ class TestSFTPProxy(TestSFTPProxyBase):
         )
         # TODO: add reading test
 
+    def _make_transport(self, *args, **kwargs):
+        """Make a transport that will always be closed after tearDown,
+        otherwise the connection will be blocked
+
+        """
+        transport = paramiko.Transport(self.origin_server.server_address)
+        self.addCleanup(transport.close)
+        return transport
+
     def test_origin_basic_operations(self):
         password = 'foobar'
         user = self._register(
             root=self.fixture_path('dummy_files'),
             password=password,
         )
-        transport = paramiko.Transport(self.origin_server.server_address)
+        transport = self._make_transport(self.origin_server.server_address)
         transport.connect(
             username=user.name,
             password=password,
@@ -74,7 +83,7 @@ class TestSFTPProxy(TestSFTPProxyBase):
             root=self.fixture_path('dummy_files'),
             password=password,
         )
-        transport = paramiko.Transport(self.proxy_server.server_address)
+        transport = self._make_transport(self.proxy_server.server_address)
         transport.connect(
             username=user.name,
             password=password,
