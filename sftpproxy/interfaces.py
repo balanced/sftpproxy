@@ -19,8 +19,9 @@ class SFTPProxyInterface(object):
 
     """
 
-    def authenticate(self, key=None, password=None):
-        """Authenticate user by given key or password
+    def authenticate(self, password=None, key=None):
+        """Authenticate user by given key or password. Return a boolean value
+        to indicate whether user is authenticated
 
         """
         return False

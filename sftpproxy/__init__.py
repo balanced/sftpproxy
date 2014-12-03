@@ -121,6 +121,7 @@ class SSHServerHandler(paramiko.ServerInterface):
         auths = []
         proxy = self._proxy_factory(username)
         if proxy is not None:
+            auths.append('none')
             auths.append('password')
             auths.append('publickey')
         return ','.join(auths)

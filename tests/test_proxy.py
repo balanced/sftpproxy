@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 import StringIO
 
 import paramiko
+from paramiko.ssh_exception import AuthenticationException
+from paramiko.ssh_exception import ChannelException
 
 from sftpproxy.interfaces import SFTPProxyInterface
 from . import TestSFTPProxyBase
@@ -95,3 +97,57 @@ class TestSFTPProxy(TestSFTPProxyBase):
         cli = paramiko.SFTPClient.from_transport(transport)
 
         self._test_basic_operations(cli)
+
+    def test_auth_failed(self):
+        auth_calls = []
+
+        class AuthRejectProxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                auth_calls.append((args, kwargs))
+                return False
+
+        def make_proxy(username):
+            proxy = AuthRejectProxy()
+            proxy.address = ':'.join(map(str, self.origin_server.server_address))
+            proxy.config = dict(
+                username=user.name,
+                password=password,
+            )
+            return proxy
+
+        self.proxy_server.config['SFTP_PROXY_FACTORY'] = make_proxy
+
+        password = 'foobar'
+        user = self._register(
+            root=self.fixture_path('dummy_files'),
+            password=password,
+        )
+
+        with self.assertRaises(AuthenticationException):
+            transport = self._make_transport(self.proxy_server.server_address)
+            transport.connect(
+                username=user.name,
+                pkey=paramiko.RSAKey.from_private_key_file(
+                    self.fixture_path('sftp', 'proxy_rsa')
+                ),
+            )
+
+        with self.assertRaises(AuthenticationException):
+            transport = self._make_transport(self.proxy_server.server_address)
+            transport.connect(
+                username=user.name,
+                password=password,
+            )
+
+        with self.assertRaises(ChannelException):
+            transport = self._make_transport(self.proxy_server.server_address)
+            transport.connect(username=user.name)
+            cli = paramiko.SFTPClient.from_transport(transport)
+            cli.listdir()
+
+        self.assertEqual(len(auth_calls), 2)
+        self.assertEqual(auth_calls[1], (tuple(), dict(password=password)))
+
+        expected_pub_key = self.read_fixture('sftp', 'proxy_rsa.pub').split()[1]
+        pub_key = auth_calls[0][1]['key']
+        self.assertEqual(pub_key.get_base64(), expected_pub_key)
