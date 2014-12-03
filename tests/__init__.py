@@ -13,7 +13,7 @@ import logging
 
 import paramiko
 
-from sftpproxy import TCPServer
+from sftpproxy import ThreadingTCPServer
 from sftpproxy import SFTPStreamRequestHandler
 from sftpproxy.file_handles import SFTPHandle
 from sftpproxy.utils import as_sftp_error
@@ -205,7 +205,7 @@ class TestSFTPProxyBase(unittest.TestCase):
         origin_thread.start()
 
         # proxy server
-        cls.proxy_server = TCPServer(
+        cls.proxy_server = ThreadingTCPServer(
             address=('localhost', 0),
             host_key=paramiko.RSAKey.from_private_key_file(
                 cls.fixture_path('sftp', 'proxy_rsa')
