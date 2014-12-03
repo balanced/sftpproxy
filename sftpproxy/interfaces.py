@@ -19,6 +19,12 @@ class SFTPProxyInterface(object):
 
     """
 
+    def authenticate(self, key=None, password=None):
+        """Authenticate user by given key or password
+
+        """
+        return False
+
     def ingress_handler(self, path, input_file, output_file):
         """Called to handle ingress file (written file), and return the
         modified file object. Path is the file path of written file, input_file

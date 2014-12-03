@@ -119,8 +119,10 @@ class SSHServerHandler(paramiko.ServerInterface):
 
     def get_allowed_auths(self, username):
         auths = []
-        auths.append('password')
-        auths.append('publickey')
+        proxy = self._proxy_factory(username)
+        if proxy is not None:
+            auths.append('password')
+            auths.append('publickey')
         return ','.join(auths)
 
     def check_auth_none(self, username):
@@ -180,7 +182,7 @@ class SSHServerHandler(paramiko.ServerInterface):
             'channel request denied from %s, kind=%s',
             self.client_address, kind
         )
-        return paramiko.OPEN_SUCCEEDED
+        return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
     # TODO:
 
 
