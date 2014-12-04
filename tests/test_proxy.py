@@ -200,3 +200,47 @@ class TestSFTPProxy(TestSFTPProxyBase):
                 result_file.read(),
                 'hodor hodor hodor hodor hodor hodor hodor hodor',
             )
+
+    def test_egress_hodor_proxy(self):
+
+        class HodorProxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                return True
+
+            def egress_handler(self, path, input_file, output_file):
+                data = input_file.read()
+                word_pattern = re.compile(r'(\w+)')
+                data = word_pattern.sub('hodor', data)
+                output_file.write(data)
+
+        def make_proxy(username):
+            proxy = HodorProxy()
+            proxy.address = ':'.join(map(str, self.origin_server.server_address))
+            proxy.config = dict(
+                username=user.name,
+                password=password,
+            )
+            return proxy
+
+        self.proxy_server.config['SFTP_PROXY_FACTORY'] = make_proxy
+
+        password = 'foobar'
+        user = self._register(
+            root=self.fixture_path('dummy_files'),
+            password=password,
+        )
+        transport = self._make_transport(self.proxy_server.server_address)
+        transport.connect(
+            username=user.name,
+            password=password,
+        )
+        cli = paramiko.SFTPClient.from_transport(transport)
+
+        hodor_path = os.path.join(user.root, 'hodor')
+        with open(hodor_path, 'wt') as hodor_file:
+            hodor_file.write('a quick fox jump over the lazy dog')
+
+        self.assertEqual(
+            cli.file('hodor').read(),
+            'hodor hodor hodor hodor hodor hodor hodor hodor',
+        )
