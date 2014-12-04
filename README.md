@@ -8,7 +8,7 @@ A SFTP proxy library
 Example
 =======
 
-Here is a simple hodor SFTP proxy. It replaces world in the content of uploaded and downloaded files.
+Here is a simple hodor SFTP proxy. It replaces worlds in the content of uploaded and downloaded files.
 
 ```python
 from __future__ import unicode_literals
