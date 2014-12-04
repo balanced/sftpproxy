@@ -88,3 +88,25 @@ hodor = (
 )
 ...
 ```
+
+You can also see the same effect applied to downloaded files
+
+```
+sftp> get /etc/hosts
+Fetching /etc/hosts to hosts
+/etc/hosts                                                                                      112%  253     0.2KB/s   00:00    
+```
+
+and here is the content
+
+```
+hodor.hodor.hodor.hodor hodor
+hodor.hodor.hodor.hodor hodor
+
+# hodor hodor hodor hodor hodor hodor hodor hodor hodor
+::hodor     hodor-hodor hodor-hodor
+hodor::hodor hodor-hodor
+hodor::hodor hodor-hodor
+hodor::hodor hodor-hodor
+hodor::hodor hodor-hodor
+```
