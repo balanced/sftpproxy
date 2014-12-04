@@ -184,7 +184,6 @@ class SSHServerHandler(paramiko.ServerInterface):
             self.client_address, kind
         )
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
-    # TODO:
 
 
 class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
