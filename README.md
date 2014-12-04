@@ -75,7 +75,7 @@ sftp>
 
 Then you can see the uploaded file are placed with hodor language beautufily.
 
-```
+```python
 hodor hodor hodor hodor
 hodor hodor
 
