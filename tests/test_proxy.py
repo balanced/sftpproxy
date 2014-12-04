@@ -1,4 +1,6 @@
 from __future__ import unicode_literals
+import os
+import re
 import StringIO
 
 import paramiko
@@ -151,3 +153,50 @@ class TestSFTPProxy(TestSFTPProxyBase):
         expected_pub_key = self.read_fixture('sftp', 'proxy_rsa.pub').split()[1]
         pub_key = auth_calls[0][1]['key']
         self.assertEqual(pub_key.get_base64(), expected_pub_key)
+
+    def test_ingress_hodor_proxy(self):
+
+        class HodorProxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                return True
+
+            def ingress_handler(self, path, input_file, output_file):
+                data = input_file.read()
+                word_pattern = re.compile(r'(\w+)')
+                data = word_pattern.sub('hodor', data)
+                output_file.write(data)
+
+        def make_proxy(username):
+            proxy = HodorProxy()
+            proxy.address = ':'.join(map(str, self.origin_server.server_address))
+            proxy.config = dict(
+                username=user.name,
+                password=password,
+            )
+            return proxy
+
+        self.proxy_server.config['SFTP_PROXY_FACTORY'] = make_proxy
+
+        password = 'foobar'
+        user = self._register(
+            root=self.fixture_path('dummy_files'),
+            password=password,
+        )
+        transport = self._make_transport(self.proxy_server.server_address)
+        transport.connect(
+            username=user.name,
+            password=password,
+        )
+        cli = paramiko.SFTPClient.from_transport(transport)
+        cli.putfo(
+            StringIO.StringIO('a quick fox jump over the lazy dog'),
+            'hodor',
+            confirm=False,
+        )
+
+        hodor_path = os.path.join(user.root, 'hodor')
+        with open(hodor_path, 'rt') as result_file:
+            self.assertEqual(
+                result_file.read(),
+                'hodor hodor hodor hodor hodor hodor hodor hodor',
+            )
