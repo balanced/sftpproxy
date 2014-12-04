@@ -75,8 +75,6 @@ class SFTPWritingHandle(SFTPHandle):
                 input_file=self.input_file,
                 output_file=output_file,
             )
-            # XXX: WTF?
-            # db.Session.rollback()  # NOTE: release transaction resources
             output_file.seek(0)
             # flush the modified file to upstream
             self.owner.upstream.putfo(output_file, self.path)
@@ -127,8 +125,6 @@ class SFTPReadingHandle(SFTPHandle):
             input_file=input_file,
             output_file=output_file,
         )
-        # XXX: WTF?
-        # db.Session.rollback()  # NOTE: release transaction resources
         output_file.seek(0)
         stat = self.owner.upstream.stat(self.path)
         os.utime(tmp_path, (stat.st_atime or 0, stat.st_mtime or 0))
