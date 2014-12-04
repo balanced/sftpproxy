@@ -62,7 +62,7 @@ Run the server like this
 python hodor_proxy.py ~/.ssh/id_rsa
 ```
 
-then connect the SFT and put some files
+then connect the SFTP server and put some files
 
 ```bash
 $ sftp -P 9999 127.0.0.1
