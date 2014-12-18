@@ -26,12 +26,10 @@ class HodorProxy(SFTPProxyInterface):
     def __init__(self, username):
         self.username = username
         self.address = '127.0.0.1:2222'
-        self.config = {
-            'username': 'vagrant',
-            'private_key': paramiko.RSAKey.from_private_key_file(
-                os.path.expanduser('~/.vagrant.d/insecure_private_key')
-            ),
-        }
+        self.username = 'vagrant'
+        self.private_key = paramiko.RSAKey.from_private_key_file(
+            os.path.expanduser('~/.vagrant.d/insecure_private_key')
+        )
 
     def authenticate(self, *args, **kwargs):
         return True
