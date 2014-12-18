@@ -42,3 +42,10 @@ class SFTPProxyInterface(object):
         
         """
         output_file.write(input_file.read())
+
+    def session_ended(self):
+        """Called to notify that the SFTP session is ended. This is a good
+        place for doing some cleanup job like closing database session.
+
+        """
+        pass

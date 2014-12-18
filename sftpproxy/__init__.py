@@ -45,10 +45,13 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
         self.upstream = paramiko.SFTPClient.from_transport(t)
 
     def session_ended(self):
-        # Notice: self.upstream.close() doesn't send disconnect msg
-        if self.upstream is not None:
-            self.upstream.sock.transport.close()
-            self.upstream = None
+        try:
+            self.proxy.session_ended()
+        finally:
+            # Notice: self.upstream.close() doesn't send disconnect msg
+            if self.upstream is not None:
+                self.upstream.sock.transport.close()
+                self.upstream = None
 
     @as_sftp_error
     def open(self, path, flags, attr):
