@@ -25,8 +25,10 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
         self.client_address = server.client_address
         self.ssh_server = server
         self.proxy = server.proxy
-        self.username = self.proxy.config.get('username') or server.username
-        self.password = self.proxy.config.get('password') or server.password
+        self.username = getattr(self.proxy, 'username', server.username)
+        self.password = getattr(self.proxy, 'password', server.password)
+        self.private_key = getattr(self.proxy, 'private_key', None)
+        self.host_identity = getattr(self.proxy, 'host_identity', None)
         self.upstream = None
         super(SFTPServerHandler, self).__init__(server, *args, **kwargs)
 
@@ -35,10 +37,10 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
     def session_started(self):
         t = paramiko.Transport(self.proxy.address)
         t.connect(
-            hostkey=self.proxy.config.get('host_identity'),
+            hostkey=self.host_identity,
             username=self.username,
             password=self.password,
-            pkey=self.proxy.config.get('private_key'),
+            pkey=self.private_key,
         )
         self.upstream = paramiko.SFTPClient.from_transport(t)
 

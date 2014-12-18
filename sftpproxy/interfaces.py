@@ -5,12 +5,11 @@ class SFTPProxyInterface(object):
     """SFTPProxyInterface is an interface for providing information about
     SFTP proxying and do file content manipulate.
 
-    It should provides properties:
+    It should provides attributes:
 
         - `address` the address of the upstream SFTP server
-        - `config` the proxy configuration
 
-    and some optional keys you can specify in `config`
+    and some optional attributes:
 
         - `host_identity` the host identity you expected to see
         - `private_key` the private key key for authentication
