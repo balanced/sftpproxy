@@ -18,6 +18,33 @@ logger = logging.getLogger(__name__)
 __version__ = '0.2.1'
 
 
+class SFTPClient(paramiko.SFTPClient):
+    def close(self):
+        super(SFTPClient, self).close()
+        # Notice: self.upstream.close() doesn't send disconnect msg
+        self.sock.transport.close()
+
+
+def make_default_sftp_client(
+    address,
+    host_identity,
+    username,
+    password,
+    private_key,
+):
+    """Make a SFTP client
+
+    """
+    transport = paramiko.Transport(address)
+    transport.connect(
+        hostkey=host_identity,
+        username=username,
+        password=password,
+        pkey=private_key,
+    )
+    return SFTPClient.from_transport(transport)
+
+
 class SFTPServerHandler(paramiko.SFTPServerInterface):
 
     def __init__(self, server, *args, **kwargs):
@@ -29,28 +56,31 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
         self.password = getattr(self.proxy, 'password', server.password)
         self.private_key = getattr(self.proxy, 'private_key', None)
         self.host_identity = getattr(self.proxy, 'host_identity', None)
+        self.upstream_factory = getattr(
+            self.proxy,
+            'make_sftp_client',
+            make_default_sftp_client,
+        )
         self.upstream = None
         super(SFTPServerHandler, self).__init__(server, *args, **kwargs)
 
     # paramiko.SFTPServerInterface
 
     def session_started(self):
-        t = paramiko.Transport(self.proxy.address)
-        t.connect(
-            hostkey=self.host_identity,
+        self.upstream = self.upstream_factory(
+            address=self.proxy.address,
+            host_identity=self.host_identity,
             username=self.username,
             password=self.password,
-            pkey=self.private_key,
+            private_key=self.private_key,
         )
-        self.upstream = paramiko.SFTPClient.from_transport(t)
 
     def session_ended(self):
         try:
             self.proxy.session_ended()
         finally:
-            # Notice: self.upstream.close() doesn't send disconnect msg
             if self.upstream is not None:
-                self.upstream.sock.transport.close()
+                self.upstream.close()
                 self.upstream = None
 
     @as_sftp_error
