@@ -2,10 +2,20 @@ from __future__ import unicode_literals
 import os
 import tempfile
 import StringIO
+import logging
 
 import paramiko
 
 from .utils import as_sftp_error
+
+logger = logging.getLogger(__name__)
+
+
+class DoNotPassThrough(Exception):
+    """This exception indicates that do not pass the file through to upstream
+    server.
+
+    """
 
 
 class SFTPHandle(paramiko.SFTPHandle):
@@ -78,6 +88,8 @@ class SFTPWritingHandle(SFTPHandle):
             output_file.seek(0)
             # flush the modified file to upstream
             self.owner.upstream.putfo(output_file, self.path)
+        except DoNotPassThrough:
+            logger.info('DoNotPassThrough raised, ignore output file')
         finally:
             self.input_file.seek(offset)
 
