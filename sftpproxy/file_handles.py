@@ -7,15 +7,9 @@ import logging
 import paramiko
 
 from .utils import as_sftp_error
+from .interfaces import DoNotPassThrough
 
 logger = logging.getLogger(__name__)
-
-
-class DoNotPassThrough(Exception):
-    """This exception indicates that do not pass the file through to upstream
-    server.
-
-    """
 
 
 class SFTPHandle(paramiko.SFTPHandle):

@@ -8,6 +8,7 @@ from paramiko.ssh_exception import AuthenticationException
 from paramiko.ssh_exception import ChannelException
 
 from sftpproxy.interfaces import SFTPProxyInterface
+from sftpproxy.interfaces import DoNotPassThrough
 from . import TestSFTPProxyBase
 
 
@@ -244,3 +245,44 @@ class TestSFTPProxy(TestSFTPProxyBase):
             cli.file('hodor').read(),
             'hodor hodor hodor hodor hodor hodor hodor hodor',
         )
+
+    def test_ingress_do_not_pass_through(self):
+
+        class NotPassingThroughProxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                return True
+
+            def ingress_handler(self, path, input_file, output_file):
+                output_file.write(input_file.read())
+                raise DoNotPassThrough
+
+        def make_proxy(username):
+            proxy = NotPassingThroughProxy()
+            proxy.address = ':'.join(map(str, self.origin_server.server_address))
+            proxy.config = dict(
+                username=user.name,
+                password=password,
+            )
+            return proxy
+
+        self.proxy_server.config['SFTP_PROXY_FACTORY'] = make_proxy
+
+        password = 'foobar'
+        user = self._register(
+            root=self.fixture_path('dummy_files'),
+            password=password,
+        )
+        transport = self._make_transport(self.proxy_server.server_address)
+        transport.connect(
+            username=user.name,
+            password=password,
+        )
+        cli = paramiko.SFTPClient.from_transport(transport)
+        cli.putfo(
+            StringIO.StringIO('a quick fox jump over the lazy dog'),
+            'target_file',
+            confirm=False,
+        )
+
+        target_path = os.path.join(user.root, 'target_file')
+        self.assertFalse(os.path.exists(target_path))

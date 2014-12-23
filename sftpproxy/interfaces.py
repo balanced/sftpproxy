@@ -1,6 +1,13 @@
 from __future__ import unicode_literals
 
 
+class DoNotPassThrough(Exception):
+    """This exception indicates that do not pass the file through to upstream
+    server.
+
+    """
+
+
 class SFTPProxyInterface(object):
     """SFTPProxyInterface is an interface for providing information about
     SFTP proxying and do file content manipulate.
