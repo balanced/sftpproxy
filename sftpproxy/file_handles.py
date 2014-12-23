@@ -133,7 +133,8 @@ class SFTPReadingHandle(SFTPHandle):
         )
         output_file.seek(0)
         stat = self.owner.upstream.stat(self.path)
-        os.utime(tmp_path, (stat.st_atime or 0, stat.st_mtime or 0))
+        if stat:
+            os.utime(tmp_path, (stat.st_atime or 0, stat.st_mtime or 0))
         return output_file
 
     # paramiko.SFTPHandle
