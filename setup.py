@@ -23,6 +23,7 @@ setup(
     install_requires=[
         'paramiko >=1.12,<2.0',
         'pycrypto >=2.6.1,<3.0',
+        'pwho >=0.1.0,<0.2',
     ],
     extras_require=dict(
         tests=tests_require,
