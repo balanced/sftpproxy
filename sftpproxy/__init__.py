@@ -6,6 +6,7 @@ import threading
 import SocketServer
 
 import pwho
+import netaddr
 import paramiko
 import Crypto.Random
 
@@ -262,6 +263,11 @@ class SFTPStreamRequestHandler(
     def client_address_str(self):
         return ':'.join(map(str, self.client_address))
 
+    def proxy_authenticate(self, proxy_info):
+        proxy_cidrs = self.server.config.get('SFTP_PROXY_CIDRS')
+        ip = netaddr.IPAddress(proxy_info.destination_address)
+        return any(ip in cidr for cidr in proxy_cidrs)
+
     def handle(self):
         logger.info('Connection made from %s', self.client_address_str)
         # proxy protocol
@@ -269,7 +275,7 @@ class SFTPStreamRequestHandler(
         proxy_info = self.proxy_protocol(
             error='unread',
             default=None,
-            authenticate=False,
+            authenticate=bool(self.server.config.get('SFTP_PROXY_CIDRS')),
         )
         if proxy_info is not None:
             client_address = proxy_info.source_address, proxy_info.source_port
