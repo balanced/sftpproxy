@@ -50,6 +50,15 @@ class SFTPProxyInterface(object):
         """
         output_file.write(input_file.read())
 
+    def session_started(self, client_address):
+        """Called to notify that the SFTP session is started. The address of
+        client is passed as the first arguemtn in a format like
+        
+            ('127.0.0.1', 61126)
+
+        """
+        pass
+
     def session_ended(self):
         """Called to notify that the SFTP session is ended. This is a good
         place for doing some cleanup job like closing database session.

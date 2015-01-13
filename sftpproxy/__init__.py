@@ -67,6 +67,10 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
     # paramiko.SFTPServerInterface
 
     def session_started(self):
+        # TODO: maybe we should read returned value from session_started,
+        # so that we can give it a chance to filter connections by IP
+        # address
+        self.proxy.session_started(self.client_address)
         self.upstream = self.upstream_factory(
             address=self.proxy.address,
             host_identity=self.host_identity,
