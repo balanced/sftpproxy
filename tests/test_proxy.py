@@ -286,3 +286,42 @@ class TestSFTPProxy(TestSFTPProxyBase):
 
         target_path = os.path.join(user.root, 'target_file')
         self.assertFalse(os.path.exists(target_path))
+
+    def test_proxy_protocol(self):
+        client_address_result = []
+
+        class Proxy(SFTPProxyInterface):
+            def authenticate(self, *args, **kwargs):
+                return True
+
+            def session_started(self, client_address):
+                client_address_result.append(client_address)
+
+        def make_proxy(username):
+            proxy = Proxy()
+            proxy.address = ':'.join(map(str, self.origin_server.server_address))
+            proxy.config = dict(
+                username=user.name,
+                password=password,
+            )
+            return proxy
+
+        self.proxy_server.config['SFTP_PROXY_FACTORY'] = make_proxy
+
+        password = 'foobar'
+        user = self._register(
+            root=self.fixture_path('dummy_files'),
+            password=password,
+        )
+        transport = self._make_transport(self.proxy_server.server_address)
+        transport.sock.send('PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n')
+        transport.connect(
+            username=user.name,
+            password=password,
+        )
+        cli = paramiko.SFTPClient.from_transport(transport)
+        self.assertEqual(
+            cli.file('foo').read(),
+            'bar',
+        )
+        self.assertEqual(client_address_result, [('192.168.0.1', 56324)])
