@@ -67,6 +67,9 @@ class SFTPServerHandler(paramiko.SFTPServerInterface):
     # paramiko.SFTPServerInterface
 
     def session_started(self):
+        # TODO: we should support proxy protocol in the future, so that
+        # even if we are behind haproxy or AWS loading balancer, we can
+        # still get the correct client address
         # TODO: maybe we should read returned value from session_started,
         # so that we can give it a chance to filter connections by IP
         # address
