@@ -5,6 +5,7 @@ import functools
 import threading
 import SocketServer
 
+import pwho
 import paramiko
 import Crypto.Random
 
@@ -228,7 +229,10 @@ class SSHServerHandler(paramiko.ServerInterface):
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
 
-class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
+class SFTPStreamRequestHandler(
+    SocketServer.StreamRequestHandler,
+    pwho.StreamRequestMixin,
+):
 
     default_negotiation_poll = 0.1
 
@@ -262,6 +266,13 @@ class SFTPStreamRequestHandler(SocketServer.StreamRequestHandler):
         logger.info('Connection made from %s', self.client_address_str)
         # proxy protocol
         client_address = self.client_address
+        proxy_info = self.proxy_protocol(
+            error='unread',
+            default=None,
+            authenticate=False,
+        )
+        if proxy_info is not None:
+            client_address = proxy_info.source_address, proxy_info.source_port
 
         negotiation_poll = self.server.config.get(
             'SFTP_PROXY_NEGOTIATION_POLL',
