@@ -81,7 +81,7 @@ class SFTPWritingHandle(SFTPHandle):
             )
             output_file.seek(0)
             # flush the modified file to upstream
-            self.owner.upstream.putfo(output_file, self.path)
+            self.owner.upstream.putfo(output_file, self.path, confirm=False)
         except DoNotPassThrough:
             logger.info('DoNotPassThrough raised, ignore output file')
         finally:
