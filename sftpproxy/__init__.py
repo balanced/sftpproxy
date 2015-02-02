@@ -17,7 +17,7 @@ from .file_handles import SFTPWritingHandle
 
 logger = logging.getLogger(__name__)
 
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 
 
 class SFTPClient(paramiko.SFTPClient):
