@@ -296,9 +296,13 @@ class SFTPStreamRequestHandler(
             'SFTP_PROXY_JOIN_TIMEOUT',
             self.default_join_timeout,
         )
+        transport_cls = self.server.config.get(
+            'SFTP_PROXY_TRANSPORT_CLASS',
+            paramiko.Transport,
+        )
 
         # transport
-        transport = paramiko.Transport(self.request)
+        transport = transport_cls(self.request)
         if self.host_key is not None:
             transport.add_server_key(self.host_key)
         transport.set_subsystem_handler(
